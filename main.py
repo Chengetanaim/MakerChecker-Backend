@@ -2,10 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app import database, models
-
-
-from app.routes import auth, todos, users, roles
-
+from app.routes import auth, roles, todos, users
 
 app = FastAPI(
     title="MakerChecker",

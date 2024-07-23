@@ -1,5 +1,5 @@
 from sqlalchemy import JSON, Boolean, Column, ForeignKey, Integer, String
-from sqlalchemy.orm import relationship, Session
+from sqlalchemy.orm import Session, relationship
 
 from .database import Base
 
@@ -11,6 +11,7 @@ class User(Base):
     email = Column(String, unique=True, index=True)
     password = Column(String)
     is_active = Column(Boolean, default=True)
+
     role_id = Column(Integer, ForeignKey("roles.id"))
     role = relationship("Role")
     todos = relationship("Todo", back_populates="owner")
