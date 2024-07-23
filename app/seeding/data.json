@@ -1,0 +1,13 @@
+{
+	"target_class": "app.models:ContentType",
+	"data": [
+		{
+			"app_label": "permissions",
+			"model": "Permission"
+		},
+		{
+			"app_label": "users",
+			"model": "User"
+		}
+	]
+}

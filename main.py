@@ -1,7 +1,11 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app import database, models
+# from sqlalchemy.orm import sessionmaker
+# from sqlalchemyseeder import ResolvingSeeder
+from sqlmodel import SQLModel
+
+from app import database
 from app.routes import auth, roles, todos, users
 
 app = FastAPI(
@@ -18,8 +22,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-models.Base.metadata.create_all(bind=database.engine)
+SQLModel.metadata.create_all(database.engine)
 
+# Configure the seeder
+# SQLModel.metadata.create_all(database.engine)
+# session = sessionmaker(autocommit=False, autoflush=False, bind=database.engine)
+# seeder = ResolvingSeeder(session)
+# new_entities = seeder.load_entities_from_json_file("app/seeding/data.json")
+# session.commit()
 
 app.include_router(users.router)
 app.include_router(auth.router)
