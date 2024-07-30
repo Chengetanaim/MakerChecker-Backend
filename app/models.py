@@ -1,39 +1,49 @@
 import enum
+from dataclasses import dataclass
+from datetime import datetime
 
-from sqlmodel import Field, Relationship, SQLModel
+from sqlmodel import Field, SQLModel
+
+from app import utils
 
 
+@dataclass()
 class ContentType(SQLModel, table=True):
     """
     #### This model represents the content type of a model.
 
-    For example, if you have a model called `Permissions` that is defined as follows:
+    For example:
+    For the `Permissions` model as follows:
 
-    ```
+    ```py
     class Permissions(SQLModel, table=True):
         id: int = Field(primary_key=True)
         name: str
         description: str
     ```
 
-    You have to add:
+    You need to create a `content-type` entry so that it creates
+    permissions for that model in the database.
 
-    ```
-    app_label = "permissions"
-    model = "Permission"
+
+    ```py
+    content_type = ContentType(model="Permissions")
     ```
     """
 
     __tablename__ = "contenttypes"
 
     id: int | None = Field(default=None, primary_key=True)
-    app_label: str
     model: str
 
-    def __repr__(self) -> str:
-        return f"{self.app_label}.{self.model}"
+
+# read:users : Can read all users.
+# add:users  : Can add new users.
+# delete:users : Can delete users.
+# update: users : Can update users.
 
 
+@dataclass()
 class Permission(SQLModel, table=True):
     __tablename__ = "permissions"
 
@@ -42,34 +52,47 @@ class Permission(SQLModel, table=True):
     description: str
 
     content_type_id: int | None = Field(default=None, foreign_key="contenttypes.id")
-    content_type: ContentType | None = Relationship(back_populates="permissions")
-
-    def __repr__(self) -> str:
-        return f"{self.name}"
 
 
-class UserPermission(SQLModel, table=True):
-    __tablename__ = "userpermissions"
-
-    permission_id: int | None = Field(foreign_key="permissions.id", primary_key=True)
-    permission: Permission | None = Relationship(back_populates="userpermissions")
-
-    user_id: int | None = Field(foreign_key="users.id", primary_key=True)
-    user: "User" = Relationship(back_populates="userpermissions")
-
-    def __repr__(self) -> str:
-        return f"{self.permission.name}"
+# Checkers
 
 
-class UserGroup(SQLModel, table=True):
-    __tablename__ = "usergroups"
+@dataclass()
+class PermissionsGroup(SQLModel, table=True):
+    __tablename__ = "permissions_groups"
 
     id: int | None = Field(default=None, primary_key=True)
     name: str
-    permissions: list["Permission"] = Relationship(back_populates="group")
 
-    def __repr__(self) -> str:
-        return f"{self.name}"
+
+# Admin: read:users
+# Admin: write:users
+
+
+@dataclass()
+class UserGroup(SQLModel, table=True):
+    __tablename__ = "users_groups"
+
+    group_id: int | None = Field(
+        default=None, foreign_key="permissions_groups.id", primary_key=True
+    )
+
+    permission_id: int | None = Field(
+        default=None, foreign_key="permissions.id", primary_key=True
+    )
+
+
+# Tawanda read:users
+
+
+@dataclass()
+class UserPermission(SQLModel, table=True):
+    __tablename__ = "users_permissions"
+
+    permission_id: int | None = Field(
+        default=None, foreign_key="users.id", primary_key=True
+    )
+    user_id: int | None = Field(default=None, foreign_key="users.id", primary_key=True)
 
 
 class Role(enum.Enum):
@@ -78,25 +101,30 @@ class Role(enum.Enum):
     SUPERUSER = "superuser"
 
 
+@dataclass()
 class User(SQLModel, table=True):
     __tablename__ = "users"
 
     id: int | None = Field(default=None, primary_key=True)
-    email: str
-    password: str
+    email: str = Field(unique=True)
+    password: str = Field(nullable=False)
     is_active: bool = True
     role: Role = Field(default=Role.USER)
 
-    group_id: int | None = Field(default=None, foreign_key="usergroups.id")
-    group: UserGroup | None = Relationship(back_populates="users")
+    group_id: int | None = Field(default=None, foreign_key="users_groups.group_id")
 
-    permissions: list["UserPermission"] = Relationship(back_populates="user")
-    todos: list["Todo"] = Relationship(back_populates="owner")
+    def set_password(self, password: str) -> "User":
+        if password:
+            self.password = utils.hash_password(password)
+            return self
 
-    def __repr__(self) -> str:
-        return f"{self.email}"
+    def verify_password(self, password: str) -> "User":
+        password_context = utils.CryptContext(schemes=["bcrypt"], deprecated="auto")
+        password_context.verify(self.password, password)
+        return self
 
 
+@dataclass()
 class Todo(SQLModel, table=True):
     __tablename__ = "todos"
 
@@ -104,8 +132,5 @@ class Todo(SQLModel, table=True):
     title: str
     description: str
 
-    owner_id: int | None = Field(default=None, foreign_key="users.id")
-    owner: User | None = Relationship(back_populates="todos")
-
-    def __repr__(self) -> str:
-        return f"{self.title}"
+    creator_id: int | None = Field(default=None, foreign_key="users.id")
+    created_at: datetime = Field(default=datetime.now)

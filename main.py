@@ -1,9 +1,7 @@
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
-# from sqlalchemy.orm import sessionmaker
-# from sqlalchemyseeder import ResolvingSeeder
-from sqlmodel import SQLModel
+from sqlalchemyseeder import ResolvingSeeder
+from sqlmodel import Session, SQLModel
 
 from app import database
 from app.routes import auth, roles, todos, users
@@ -13,6 +11,7 @@ app = FastAPI(
     description="Maker Checker",
 )
 
+""" Middlewares"""
 
 app.add_middleware(
     CORSMiddleware,
@@ -22,14 +21,21 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+"""Seeder"""
+
+# TODO: I am not yet sure if this code should be here.
+
 SQLModel.metadata.create_all(database.engine)
 
-# Configure the seeder
-# SQLModel.metadata.create_all(database.engine)
-# session = sessionmaker(autocommit=False, autoflush=False, bind=database.engine)
-# seeder = ResolvingSeeder(session)
+# seeder = ResolvingSeeder(session=db_session)
 # new_entities = seeder.load_entities_from_json_file("app/seeding/data.json")
-# session.commit()
+# db_session.commit()
+# db_session.close()
+
+
+""" Routers """
+# It adds all the routes to the app.
 
 app.include_router(users.router)
 app.include_router(auth.router)

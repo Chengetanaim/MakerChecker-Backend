@@ -1,10 +1,12 @@
-from jose import JWTError, jwt  # type: ignore
-from datetime import datetime, timedelta, UTC as datetimeUTC
-from fastapi.security import OAuth2PasswordBearer, SecurityScopes
-from fastapi import Depends, HTTPException, status, Security  # type: ignore
-from sqlalchemy.orm import Session
-from pydantic import BaseModel, ValidationError
+from datetime import UTC as datetimeUTC
+from datetime import datetime, timedelta
 from typing import Annotated
+
+from fastapi import Depends, HTTPException, Security, status  # type: ignore
+from fastapi.security import OAuth2PasswordBearer, SecurityScopes
+from jose import JWTError, jwt  # type: ignore
+from pydantic import ValidationError
+from sqlalchemy.orm import Session
 
 from . import database, models, schemas
 
@@ -44,16 +46,20 @@ def get_current_user(
         authenticate_value = f'Bearer scope="{security_scopes.scope_str}"'
     else:
         authenticate_value = "Bearer"
+
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": authenticate_value},
     )
+
     try:
         jwt_payload = jwt.decode(token, SECRET_KEY, algorithms=ALGORITHM)
         user_id = jwt_payload.get("user_id")
+
         if user_id is None:
             raise credentials_exception
+
         token_scopes = jwt_payload.get("scopes", [])
         token_data = schemas.TokenData(scopes=token_scopes, user_id=user_id)
 
@@ -92,3 +98,7 @@ def get_current_active_user(
 #         raise Error400("User is not an admin")
 
 #     return current_user
+
+
+def get_session():
+    return database.SessionLocal()
