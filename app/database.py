@@ -1,16 +1,16 @@
+from decouple import config
 from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+from sqlmodel import SQLModel
 
-SQLALCHEMY_DATABASE_URL = "postgresql://postgres:admin@localhost/makerchecker"
-
-engine = create_engine(SQLALCHEMY_DATABASE_URL)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-Base = declarative_base()
+# Create the database connection
+engine = create_engine(config("SQLALCHEMY_DATABASE_URL"), echo=True)
+SQLModel.metadata.create_all(engine)
+session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
 def get_db():
-    db = SessionLocal()
+    db = session()
     try:
         yield db
     finally:
